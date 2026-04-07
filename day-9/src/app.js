@@ -1,8 +1,13 @@
 const express=require("express");
+const path = require("path")
 const noteModel=require("./models/notes.model")
+const cors = require("cors")
 const app= express();
 
+app.use(cors())
 app.use(express.json());
+app.use(express.static("./public"))
+
 
 app.post("/api/notes",async(req,res)=>{
     const{title,description}=req.body;
@@ -11,7 +16,7 @@ app.post("/api/notes",async(req,res)=>{
     })
 
     res.status(201).json({
-        message:"noted created",
+        message:"note created",
         note
     })
 })
@@ -39,8 +44,12 @@ app.patch("/api/notes/:id",async(req,res)=>{
     await noteModel.findByIdAndUpdate(id,{description})
 
     res.status(200).json({
-        message:"decription updated"
+        message:"description updated"
     })
+})
+
+app.use("*name", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "/public/index.html"))
 })
 
 module.exports=app
