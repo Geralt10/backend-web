@@ -15,24 +15,9 @@ const imagekit = new ImageKit({
 async function createPostController(req, res) {
   console.log(req.body, req.file);
   
-  const token = req.cookies.token;
+  
 
-  if(!token){
-    return res.status(401).json({
-        message:"token not provided, unauthorized access",
-    })
-  }
-   let decoded=null;
-  try{
-      decoded = jwt.verify(token,process.env.JWT_SECRET);
-  }
-  catch(err){
-    return res.status(401).json({
-        message:"unauthorized access"
-    })
-  }
-
-  console.log(decoded);
+ 
   
 
   const file = await imagekit.files.upload({
@@ -44,7 +29,7 @@ async function createPostController(req, res) {
   const post = await postModel.create({
     caption:req.body.caption,
     img_url:file.url,
-    user:decoded.id,
+    user:req.user.id,
   })
    console.log(post);
    
@@ -58,26 +43,10 @@ async function createPostController(req, res) {
 
 
 async function getPostController(req,res){
-   const token = req.cookies.token;
-
-  if(!token){
-    return res.status(401).json({
-        message:"token not provided, unauthorized access",
-    })
-  }
    
-   let decoded;
-
-   try {
-     decoded= jwt.verify(token,process.env.JWT_SECRET);
-   } catch (error) {
-     return res.status(401).json({
-        message:"unauthorized acess"
-     })
-   }
 
   
-   const userID = decoded.id;
+   const userID = req.user.id;
    const post = await postModel.find({
     user:userID
    });
@@ -90,25 +59,9 @@ async function getPostController(req,res){
 }
 
 async function getpostDetailController(req,res){
-    const token = req.cookies.token;
+   
 
-  if(!token){
-    return res.status(401).json({
-        message:"token not provided, unauthorized access",
-    })
-  }
-
-  let decoded;
-
-  try {
-    decoded = jwt.verify(token,process.env.JWT_SECRET);
-  } catch (error) {
-    return res.status(401).json({
-        message:"unauthorized access"
-    })
-  }
-
-  const userID = decoded.id;
+  const userID = req.user.id;
   const postID= req.params.postID;
 
   const post = await postModel.findById(postID);
