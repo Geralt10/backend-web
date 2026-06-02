@@ -19,6 +19,10 @@ const userSchema = new mongoose.Schema({
     profileImage:{
         type:String,
         default:"https://ik.imagekit.io/geralt7895/default-avatar-icon-of-social-media-user-vector.jpg"
+    },
+    isPrivate:{
+        type:Boolean,
+        default:false
     }
 });
 
