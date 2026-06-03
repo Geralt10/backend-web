@@ -52,6 +52,13 @@ async function registerController(req,res){
 
 async function loginController(req,res){
     const{username,email,password}=req.body;
+    const ExistToken = req.cookies.token;
+
+    if(ExistToken){
+        return res.status(200).json({
+            message:"you are already logged in"
+        })
+    }
     
     const user = await userModel.findOne({
         $or:[
