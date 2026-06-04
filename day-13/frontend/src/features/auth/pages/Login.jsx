@@ -9,7 +9,7 @@ const Login = () => {
   const [username,setUsername]=useState("")
       const [email,setEmail]=useState("")
       const [password,setPassword]=useState("")
-      const{handleLogin,loading}=useAuth();
+      const{handleLogin,loading,user}=useAuth();
       
       const navigate=useNavigate()
 
@@ -23,8 +23,8 @@ const Login = () => {
         e.preventDefault();
 
        await handleLogin(username,password)
-        .then((res)=>{
-          console.log(res);
+        .then(()=>{
+          console.log("logged in")
           navigate("/")
         })
         setUsername("")

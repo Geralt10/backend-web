@@ -33,6 +33,8 @@ export async function login(username,password) {
 
 
     } catch (error) {
+        console.log("wrong credentials");
+        
         throw error
     }
 }
