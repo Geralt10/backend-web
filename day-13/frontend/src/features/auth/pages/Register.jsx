@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import "../style/form.scss"
-import {Link,useNavigate} from "react-router"
-import axios from 'axios'
+import {Link,useNavigate} from "react-router-dom"
 import { useAuth } from '../hooks/useAuth'
 
 const Register = () => {
@@ -14,19 +13,21 @@ const Register = () => {
 
     if(loading){
       return(
-        <h1>loading....</h1>
+        <main><h1>loading....</h1></main>
       )
     }
     async function handleFormSubmit(e) {
       e.preventDefault();
-      await handleRegister(username,email,password)
-      .then((res)=>{
-        console.log(res);
+      try {
+        await handleRegister(username,email,password);
+        console.log("registered successfully");
+        setUsername("")
+        setEmail("")
+        setPassword("")
         navigate("/login")
-      })
-      setUsername("")
-      setEmail("")
-      setPassword("")
+      } catch (error) {
+        console.error("Registration failed:", error);
+      }
     }
 
   return (
@@ -37,15 +38,15 @@ const Register = () => {
            <form onSubmit={handleFormSubmit}>
              <input
              value={username}
-              onInput={(e)=>setUsername(e.target.value)}
+              onChange={(e)=>setUsername(e.target.value)}
              type="text" name='username' placeholder='enter the username' autoComplete='username'/>
              <input
              value={email}
-              onInput={(e)=>setEmail(e.target.value)}
+              onChange={(e)=>setEmail(e.target.value)}
              type="email" name='email' placeholder='enter the email' autoComplete='email'/>
              <input
              value={password}
-              onInput={(e)=>setPassword(e.target.value)}
+              onChange={(e)=>setPassword(e.target.value)}
              type="password" name='password' placeholder='enter the password' autoComplete='password'/>
              <button>Register</button>
            </form>

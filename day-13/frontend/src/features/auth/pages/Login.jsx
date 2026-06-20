@@ -7,28 +7,29 @@ import { useAuth } from '../hooks/useAuth'
 
 const Login = () => {
   const [username,setUsername]=useState("")
-      const [email,setEmail]=useState("")
       const [password,setPassword]=useState("")
-      const{handleLogin,loading,user}=useAuth();
+      const{handleLogin,loading}=useAuth();
       
       const navigate=useNavigate()
 
       if(loading){
         return(
-          <h1>Loading...</h1>
+          <main><h1>loading....</h1></main>
         )
       }
 
       async function handleFormSubmit(e) {
         e.preventDefault();
 
-       await handleLogin(username,password)
-        .then(()=>{
-          console.log("logged in")
-          navigate("/")
-        })
-        setUsername("")
-        setPassword("")
+       try {
+         await handleLogin(username,password);
+         console.log("logged in")
+         setUsername("")
+         setPassword("")
+         navigate("/")
+       } catch (error) {
+         console.error("Login failed:", error);
+       }
       }
   return (
     <main>
@@ -37,7 +38,7 @@ const Login = () => {
            <form onSubmit={handleFormSubmit}>
              <input 
              value={username}
-             onInput={(e)=>setUsername(e.target.value)}
+             onChange={(e)=>setUsername(e.target.value)}
              type="text" name='username' placeholder='enter the username' autoComplete='username'/>
              <input
              value={password}
@@ -45,7 +46,7 @@ const Login = () => {
              type="password" name='password' placeholder='enter the password' autoComplete='password'/>
              <button>login</button>
            </form>
-           <p>Already have an account? <Link className='toggleAuthFrom' to="/Register">Register</Link></p>
+           <p>Need an account? <Link className='toggleAuthFrom' to="/register">Register</Link></p>
        </div>
     </main>
   )

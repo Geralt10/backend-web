@@ -5,6 +5,17 @@ export function useAuth(){
     const context = useContext(AuthContext);
     const {user,setUser,loading,setLoading}=context;
 
+    const refreshUser = async()=>{
+        setLoading(true)
+        try {
+            const response = await getMe();
+            setUser(response.user);
+            return response.user;
+        } finally {
+            setLoading(false)
+        }
+    }
+
      const handleLogin = async(username,password)=>{
             setLoading(true)
             try {
@@ -33,5 +44,5 @@ export function useAuth(){
         }
     }
 
-    return{user,loading,handleLogin,handleRegister}
+    return{user,setUser,loading,setLoading,handleLogin,handleRegister,refreshUser}
 }

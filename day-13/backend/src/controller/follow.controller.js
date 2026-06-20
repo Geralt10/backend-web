@@ -4,7 +4,12 @@ const userModel = require("../models/user.model");
 async function followUserController(req,res) {
     const followerUsername = req.user.username;
     const followingUsername= req.params.username;
-    
+
+    if (followerUsername === followingUsername) {
+        return res.status(400).json({
+            message:"you cannot follow yourself"
+        })
+    }
 
     const isFollowingExists = await userModel.findOne({
         username:followingUsername
@@ -23,8 +28,25 @@ async function followUserController(req,res) {
     })
 
     if(alreadyFollowed){
-        return res.status(409).json({
-            message:"you already follow this user",
+        if (alreadyFollowed.status === "accepted") {
+            return res.status(409).json({
+                message:"you already follow this user",
+                follow:alreadyFollowed
+            })
+        }
+
+        if (alreadyFollowed.status === "pending") {
+            return res.status(409).json({
+                message:"follow request already sent",
+                follow:alreadyFollowed
+            })
+        }
+
+        alreadyFollowed.status = isFollowingExists.isPrivate ? "pending" : "accepted";
+        await alreadyFollowed.save();
+
+        return res.status(200).json({
+            message:isFollowingExists.isPrivate ? `follow request sent to ${followingUsername}` : `you are now following ${followingUsername}`,
             follow:alreadyFollowed
         })
     }
@@ -159,11 +181,21 @@ async function updatePrivacyController(req,res) {
         })
     }
 
+    if (!isPrivate) {
+        await followModel.updateMany(
+            { following: username, status: "pending" },
+            { status: "accepted" }
+        );
+    }
+
     res.status(200).json({
         message:isPrivate ? "account set to private" : "account set to public",
         user:{
+            id:user._id,
             username:user.username,
             email:user.email,
+            bio:user.bio,
+            profileImage:user.profileImage,
             isPrivate:user.isPrivate
         }
     })

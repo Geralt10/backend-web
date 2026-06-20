@@ -1,34 +1,28 @@
 /** @format */
 
 const postModel = require("../models/post.model");
-const jwt = require("jsonwebtoken");
-const ImageKit = require("@imagekit/nodejs");
-const { toFile } = require("@imagekit/nodejs");
 const likeModel = require("../models/like.model");
-
-
-const imagekit = new ImageKit({
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
-});
+const userModel = require("../models/user.model");
+const followModel = require("../models/follow.model");
+const { uploadBufferFile } = require("../utils/imagekit");
+const { canAccessUserContent, attachFeedMeta } = require("../utils/social");
 
 
 
 async function createPostController(req, res) {
-  console.log(req.body, req.file);
+  if (!req.file) {
+    return res.status(400).json({
+      message: "image is required",
+    });
+  }
   
-  const file = await imagekit.files.upload({
-    file: await toFile(Buffer.from(req.file.buffer), "file"),
-    fileName: "userImage",
-    folder:"instaClone"
-  });
+  const file = await uploadBufferFile(req.file.buffer, "userImage", "instaClone/posts");
   
   const post = await postModel.create({
     caption:req.body.caption,
     img_url:file.url,
     user:req.user.id,
   })
-   console.log(post);
-   
   res.status(201).json({
       message:"post created",
       post
@@ -62,7 +56,7 @@ async function getpostDetailController(req,res){
   const userID = req.user.id;
   const postID= req.params.postID;
 
-  const post = await postModel.findById(postID);
+  const post = await postModel.findById(postID).populate("user").lean();
 
   if(!post){
     return res.status(404).json({
@@ -70,9 +64,9 @@ async function getpostDetailController(req,res){
     })
   }
 
-  const isValidUser = post.user.toString() == userID;
-  
-  if(!isValidUser){
+  const canViewPost = await canAccessUserContent(req.user.username, post.user);
+
+  if(!canViewPost){
     return res.status(403).json({
         message:"forbidden content"
     })
@@ -80,7 +74,7 @@ async function getpostDetailController(req,res){
 
   return res.status(200).json({
     message:"post fetched successfully",
-    post
+    post:(await attachFeedMeta([post], req.user.username))[0]
   })
 
 
@@ -101,9 +95,18 @@ async function likePostController(req,res) {
     )
    }
 
+   const postOwner = await userModel.findById(post.user);
+   const canViewPost = await canAccessUserContent(username, postOwner);
+
+   if (!canViewPost) {
+    return res.status(403).json({
+      message:"you cannot like this private post"
+    })
+   }
+
    try{
     const likePost = await likeModel.create({
-      post:post.id,
+      post:post._id,
       user:username
    })
 
@@ -138,7 +141,26 @@ async function unlikePostController(req,res){
       }
     )
    }
+   const postOwner = await userModel.findById(post.user);
+   const canViewPost = await canAccessUserContent(username, postOwner);
+
+   if (!canViewPost) {
+    return res.status(403).json({
+      message:"you cannot unlike this private post"
+    })
+   }
+
    try {
+    const isAlreadyLiked = await likeModel.findOne({
+      post: postID,
+      user: username
+    });
+
+    if(!isAlreadyLiked){
+      return res.status(404).json({
+        message: "You haven't liked this post"
+      })
+    }
 
     await likeModel.findByIdAndDelete(isAlreadyLiked._id);
      res.status(200).json({
@@ -147,7 +169,7 @@ async function unlikePostController(req,res){
 
    } 
    catch (error) {
-      if(err.code===11000){
+      if(error.code===11000){
       return res.status(409).json({
            message:"Already unliked"
      })
@@ -161,4 +183,35 @@ async function unlikePostController(req,res){
   
 }
 
-module.exports = {createPostController,getPostController,getpostDetailController,likePostController,unlikePostController};
+async function getFeedController(req,res) {
+   const user = req.user
+   const acceptedFollows = await followModel.find({
+    follower: user.username,
+    status: "accepted"
+   }).lean();
+
+   const followedUsernames = acceptedFollows.map((follow) => follow.following);
+   const visibleUsers = await userModel.find({
+    $or: [
+      { isPrivate: false },
+      { username: user.username },
+      { username: { $in: followedUsernames } },
+    ],
+   }).select("_id").lean();
+
+    const posts = await attachFeedMeta(
+      await postModel
+        .find({ user: { $in: visibleUsers.map((visibleUser) => visibleUser._id) } })
+        .sort({ _id: -1 })
+        .populate("user")
+        .lean(),
+      user.username
+    );
+
+    res.status(200).json({
+        message: "posts fetched successfully.",
+        posts
+    })
+}
+
+module.exports = {createPostController,getPostController,getpostDetailController,likePostController,unlikePostController,getFeedController};

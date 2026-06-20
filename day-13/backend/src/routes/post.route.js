@@ -1,7 +1,7 @@
 const express = require("express");
 
 const postRouter = express.Router();
-const { createPostController, getPostController, getpostDetailController, likePostController, unlikePostController } = require("../controller/post.controller");
+const { createPostController, getPostController, getpostDetailController, likePostController, unlikePostController, getFeedController } = require("../controller/post.controller");
 
 const multer = require("multer");
 const identifyUser = require("../middleware/auth.middleware");
@@ -11,6 +11,8 @@ const upload = multer({ storage: storage })
 postRouter.post("/",upload.single("image"),identifyUser,createPostController);
 
 postRouter.get("/",identifyUser,getPostController);
+
+postRouter.get("/feed",identifyUser,getFeedController)
 
 postRouter.get("/detail/:postID",identifyUser,getpostDetailController);
 
